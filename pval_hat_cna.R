@@ -1,6 +1,6 @@
 library(cna)
 
-# create a list of fs data sets w/ iid uniform variables
+# create a list of fs or cs data sets w/ iid uniform/binom variables
 bs_dat_create <- function(Nsets = 1e3, 
                           size = 30, 
                           varnum = 7,
@@ -22,10 +22,10 @@ bs_dat_create <- function(Nsets = 1e3,
 }
 
 
-# TODO funcs for cs/mv data
+
 
 # create "bootstrap" data sets where everything is independent
-# for the inference test. Currently only works for fs.
+# for the inference test. Currently only works for fs or cs.
 # x is the actual analyzed data, used to detect type and sample size.
 sim_null <- function(x, Nsets = 1e3){
   facs <- names(x)
@@ -43,8 +43,7 @@ sim_null <- function(x, Nsets = 1e3){
 
 
 # simulate empirical distribution of con/cov for a model
-# under null. x is the analyzed data set used to determine
-# sample size mainly.
+# under null. x is the analyzed data set.
 
 ccov_dist_single_model <- function(dat, model, Nsets = 1e3){
   dats <- sim_null(x = dat)
