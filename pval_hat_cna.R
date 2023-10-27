@@ -71,7 +71,12 @@ pval_hat_single <- function(model,
   return(out)
 }
 
+#EXAMPLE
+
+# get some models
 jsre <- csf(cna(d.jobsecurity, con = .8, cov = .8, outcome = "JSR"))
   
+
+# try one of them for consistency pval
 pval_hat_single("S*R + C*V + L*R <-> JSR", d.jobsecurity, obs_stat = 0.845)
   
