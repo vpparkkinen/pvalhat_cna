@@ -1,11 +1,18 @@
 library(cna)
 
 # create a list of fs data sets w/ iid uniform variables
-fs_dat_create <- function(Nsets = 1e3, 
+bs_dat_create <- function(Nsets = 1e3, 
                           size = 30, 
-                          varnum = 7, 
+                          varnum = 7,
+                          type = c("cs", "fs"),
                           varnames = LETTERS[1:varnum]){
-  c <- quote(runif(size, min = 0, max = 1))
+  type = match.arg(type)
+  if (type == "fs"){
+    c <- quote(runif(size, min = 0, max = 1))
+  } 
+  if (type == "cs"){
+    c <- quote(rbinom(n = size, size = 1, prob = 0.5))
+  }
   dsets <- vector("list", Nsets)
   for(i in 1:Nsets){
     dsets[[i]] <- data.frame(setNames(
@@ -25,10 +32,11 @@ sim_null <- function(x, Nsets = 1e3){
   N <- nrow(x)
   type <- attributes(configTable(x))$type
   # if(type=="fs"){
-  out <- fs_dat_create(Nsets = Nsets, 
+  out <- bs_dat_create(Nsets = Nsets, 
                        size = N,
                        varnames = facs,
-                       varnum = length(x))
+                       varnum = length(x),
+                       type = type)
   #}
   return(out)
 }
@@ -74,9 +82,9 @@ pval_hat_single <- function(model,
 #EXAMPLE
 
 # get some models
-jsre <- csf(cna(d.jobsecurity, con = .8, cov = .8, outcome = "JSR"))
+jsre <- csf(cna(d.jobsecurity, con = .6, cov = .8, outcome = "JSR"))
   
 
 # try one of them for consistency pval
-pval_hat_single("S*R + C*V + L*R <-> JSR", d.jobsecurity, obs_stat = 0.845)
+pval_hat_single("C + R <-> JSR", d.jobsecurity, obs_stat = 0.722)
   
