@@ -129,7 +129,7 @@ pval_hat_single <- function(model,
 jsre <- csf(cna(d.jobsecurity, con = .6, cov = .8, outcome = "JSR"))
   
 
-## try one of them for consistency pval
+## test one of them
 pval_hat_single("C + R <-> JSR", d.jobsecurity, obs_con = 0.722, obs_cov = 0.968,
                 nulltype = "perm.outcome")
 
