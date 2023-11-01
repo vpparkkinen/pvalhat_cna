@@ -42,8 +42,8 @@ getoutcomes <- function(x){
   return(out)
 }
 
-# create "bootstrap" data sets where everything is independent
-# for the inference test. Currently only works for fs or cs.
+# create "bootstrap" data sets. 
+# Currently only works for fs or cs.
 # x is the actual analyzed data, used to detect type and sample size.
 sim_null <- function(x,
                      model,
@@ -95,7 +95,7 @@ ccov_dist_single_model <- function(dat,
 
 pval_hat_single <- function(model, 
                             dat,
-                            stat_type = c("consistency", "coverage"),
+                            #stat_type = c("consistency", "coverage"),
                             obs_con = NA,
                             obs_cov = NA,
                             nulltype = c("iid", "perm.outcome", "perm.all"),
