@@ -6,7 +6,7 @@ source(pval_hat_cna.R)
 
 
 # generate cs data sets with 12,5% noise
-ds <- replicate(100, noisyDat(6, noisefraction = .125), simplify = FALSE)
+ds <- replicate(200, noisyDat(6, noisefraction = .125), simplify = FALSE)
 
 # grab dgs's
 targets <- lapply(ds, function(x) attributes(x)$target)
