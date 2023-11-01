@@ -1,4 +1,4 @@
-# install cnasimtools from vpparkkinen/cnadimtools
+# install cnasimtools from vpparkkinen/cnasimtools
 # and sort out your working directory before running
 
 library(cnasimtools)
