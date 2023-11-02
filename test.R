@@ -47,7 +47,7 @@ pot_subs <- vector("list", length(nonsig_targets))
 for(i in seq_along(pot_subs)){
  pot_subs[[i]] <- cna(nst_dat[[i]], 
                  con = (nst_fits[[i]]$consistency - 0.4),
-                 cov = (nst_fits[[i]]$consistency - 0.4),
+                 cov = (nst_fits[[i]]$coverage - 0.4),
                  outcome = nst_outs[[i]]) 
 }
 
@@ -77,8 +77,53 @@ ch_all_pvals <- function(x,ds){
   return(out)
 }
 
+# p-values for the submodels. But now we are doing multiple tests, what do
+# these p-values mean?
 ch_sub_pvals <- vector("list", length(hassub_dat))
 for(i in seq_along(hassub_dat)){
   ch_sub_pvals[[i]] <- ch_all_pvals(subs_w_info[[i]], ds = hassub_dat[[i]])
 }
 
+uch_sub_pvals <- unlist(ch_sub_pvals, recursive = FALSE)
+sub_signif_idx <- unlist(lapply(uch_sub_pvals, function(x) all(x < 0.05)))
+length(which(sub_signif_idx)) / length(sub_signif_idx)
+# generate overfitted models  
+pot_overfit <- vector("list", length(nonsig_targets))
+for(i in seq_along(pot_overfit)){
+  pot_overfit[[i]] <- csf(cna(nst_dat[[i]], 
+                       con = ifelse(nst_fits[[i]]$consistency < 1,
+                                     (nst_fits[[i]]$consistency + 
+                                       (1-nst_fits[[i]]$consistency)/2),1),
+                       cov = ifelse(nst_fits[[i]]$coverage < 1,
+                                     (nst_fits[[i]]$coverage + 
+                                       (1-nst_fits[[i]]$coverage)/2),1),
+                       outcome = nst_outs[[i]])) 
+}
+
+pot_overfit_head <- lapply(pot_overfit, head)
+
+nonempty_idx <- unlist(lapply(pot_overfit_head, function(x) nrow(x)>0))
+
+pot_of_nonempty <- pot_overfit_head[nonempty_idx]
+pot_of_nonempty_targets <- nonsig_targets[nonempty_idx]
+
+pot_minus_submodels <- vector("list", length(pot_of_nonempty))
+for(i in seq_along(pot_minus_submodels)){
+  pot_minus_submodels[[i]] <- pot_of_nonempty[[i]][
+    sapply(pot_of_nonempty[[i]]$condition, 
+             function(x) !is.submodel(x, pot_of_nonempty_targets[[i]])),
+  ]
+}
+
+
+nst_dat_nonempty <- nst_dat[nonempty_idx]
+
+of_pvals <- vector("list", length(pot_minus_submodels))
+for(i in seq_along(pot_minus_submodels)){
+  of_pvals[[i]] <- ch_all_pvals(pot_minus_submodels[[i]], 
+                                ds = nst_dat_nonempty[[i]])
+}
+
+uof_pvals <- unlist(of_pvals, recursive = FALSE)
+signif_idx <- unlist(lapply(uof_pvals, function(x) all(x < 0.05)))
+length(which(signif_idx)) / length(signif_idx)
