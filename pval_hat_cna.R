@@ -125,7 +125,7 @@ pval_hat_single <- function(model,
 
 #EXAMPLE
 
-## get some models
+# get some models
 # jsre <- csf(cna(d.jobsecurity, con = .6, cov = .8, outcome = "JSR"))
 #   
 # 
