@@ -110,7 +110,7 @@ pval_hat_single <- function(model,
       what_dist <- simdist[,which(names(simdist) == ccn[i])]
       n <- length(what_dist)
       r <- length(what_dist[what_dist >= concov[i]])
-      #pval <- (r + 1) / (n + 1)
+      #pval <- (r + 1) / (n + 1) # think this over!
       out[i] <- r / n  
     }
       

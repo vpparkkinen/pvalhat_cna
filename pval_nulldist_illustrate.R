@@ -23,7 +23,7 @@ registerDoParallel(cl = dcluster)
 
 ndat <- bs_dat_create(Nsets = 1, type = "cs")[[1]]
 # WARNING: will take time to run
-N <- 200 # increase this to get a better estimate of the p-val distr.
+N <- 100 # increase this to get a better estimate of the p-val distr.
 models <- replicate(N, randomCsf(ndat))
 
 fits <- mclapply(models, function(x) condition(x, ndat))
@@ -35,7 +35,7 @@ pvals <- foreach(i = 1:N) %dopar% {
                   obs_con = fits[[i]]$consistency,
                   obs_cov = fits[[i]]$coverage,
                   nulltype = "iid",
-                  bs_samples = 1000)
+                  bs_samples = 100)
 }
 
 
@@ -44,8 +44,22 @@ parallel::stopCluster(dcluster)
 pvals_con <- unlist(lapply(pvals, '[', 1))
 pvals_cov <- unlist(lapply(pvals, '[', 2))
 
-ks.test(pvals_con, runif(1e6))
-ks.test(pvals_cov, runif(1e6))
+pv_con_no <- na.omit(pvals_con)
+pv_cov_no <- na.omit(pvals_cov)
+
+# any(duplicated(pv_con_no))
+# which(duplicated(pv_cov_no))
+# pv_con_no <- pv_con_no + runif(length(pv_con_no), min = -0.001, max = 0.001)
+#  
+# pv_cov_no <- pv_cov_no + runif(length(pv_cov_no), min = -0.001, max = 0.001)
+
+# kolmogorov-smirnov, is the distr of p-values different from uniform
+ks.test(pv_con_no, "punif")
+ks.test(pv_cov_no, "punif")
+
+# chi-squared. Why are the results so different? Which one, if either, is appropriate?
+chisq.test(pv_con_no, p = rep(1/length(pv_con_no), length(pv_con_no)))
+chisq.test(pv_cov_no, p = rep(1/length(pv_cov_no), length(pv_cov_no)))
 
 # length(which(pvals_con >= 0.99))
 # length(which(pvals_cov <= 0.05))
