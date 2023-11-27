@@ -3,9 +3,9 @@
 # , i.e. multiple tests produce p-val <0.05 about 5% of time, 
 # when null of pure noise data is really true
 
-if(!require(rstudioapi)){
-  setwd(system2("pwd", stdout = TRUE)) # R must run in a shell
-} else {
+if(is.na(Sys.getenv("RSTUDIO", unset = NA))){
+  setwd(system2("pwd", stdout = TRUE)) # if not in RStudio, assume R runs in 
+} else {                               # a shell. otherwise assume RStudio
   path <- rstudioapi::getActiveDocumentContext()$path
   Encoding(path) <- "UTF-8"
   setwd(dirname(path))
@@ -16,25 +16,35 @@ library(cnasimtools)
 library(doParallel)
 source("pval_hat_cna.R")
 
-n.cores <- 5
+
+
+n.cores <- 4
 dcluster <- makeCluster(n.cores, type = "FORK")
 registerDoParallel(cl = dcluster)
 
 
-N <- 1000 # increase this to get a better estimate of the p-val distr.
-vn <- 7
+N <- 500 # increase this to get a better estimate of the p-val distr.
+vn <- 6
 #ndat <- bs_dat_create(Nsets = 1, type = "cs")[[1]]
-ndat <- bs_dat_create(Nsets = N, varnum = vn ,type = "cs")
+#ndat <- bs_dat_create(Nsets = N, varnum = vn ,type = "cs")
 # WARNING: will take time to run
 #models <- replicate(N, randomCsf(ndat))
 models <- replicate(N, randomCsf(vn))
+outcomes <- lapply(models, getoutcomes)
+ndat <- lapply(models, function(x) ct2df(selectCases(x)))
+ndat <- lapply(ndat, function(x) rbind(x, x))
+ndat <- mapply(permutate_cols, ndat, outcomes, SIMPLIFY = FALSE)
 
 #fits <- mclapply(models, function(x) condition(x, ndat))
 fits <- mcmapply(condition, models, ndat, SIMPLIFY = FALSE)
 
-fits <- mclapply(fits, function(x) attributes(x)$info[,c("consistency", "coverage")]) 
-fits <- lapply(fits, 
-              function(f) {f[is.na(f)] <- 0L ; return(f)})
+fits <- mclapply(fits, function(x) attributes(x)$info[,c("consistency", "coverage")])
+namod <- !unlist(lapply(fits, function(x) any(is.na(x))))
+fits <- fits[namod]
+models <- models[namod]
+ndat <- ndat[namod]
+# fits <- lapply(fits, 
+#               function(f) {f[is.na(f)] <- 0L ; return(f)})
 
 
 # pvals <- foreach(i = 1:N) %dopar% {
@@ -47,14 +57,26 @@ fits <- lapply(fits,
 # }
 
 
-pvals <- foreach(i = 1:N) %dopar% {
+pvals <- foreach(i = 1:length(models)) %dopar% {
   pval_hat_single(models[[i]],
                   ndat[[i]],
                   obs_con = fits[[i]]$consistency,
                   obs_cov = fits[[i]]$coverage,
-                  nulltype = "iid",
-                  bs_samples = 10000)
+                  nulltype = "perm.outcome",
+                  bs_samples = 500)
 }
+
+
+# pvals <- vector("list", length(models))
+# for(i in seq_along(models)){
+#   pvals[[i]] <- pval_hat_single(models[[i]],
+#                                 ndat[[i]],
+#                                 obs_con = fits[[i]]$consistency,
+#                                 obs_cov = fits[[i]]$coverage,
+#                                 nulltype = "perm.outcome",
+#                                 bs_samples = 500)
+# }
+
 
 
 parallel::stopCluster(dcluster)
@@ -82,7 +104,16 @@ chisq.test(pv_cov_no, p = rep(1/length(pv_cov_no), length(pv_cov_no)))
 # length(which(pvals_con >= 0.99))
 # length(which(pvals_cov <= 0.05))
 
-hist(pvals_con, breaks = 40, xaxt = 'n')
+hist(pvals_con, breaks = 100, xaxt = 'n')
 axis(side = 1, at=seq(0,1,0.05))
-hist(pvals_cov, breaks = 20, xaxt = 'n')
+hist(pvals_cov, breaks = 1000, xaxt = 'n')
 axis(side = 1, at=seq(0,1,0.05))
+
+
+
+var(pvals_con[pvals_con < 1])
+plot(pvals_con[pvals_con < 1])
+
+
+
+

@@ -14,11 +14,11 @@ library(cnasimtools)
 library(doParallel)
 source("pval_hat_cna.R")
 
-n.cores <- detectCores() - 4
+n.cores <- detectCores() - 5
 dcluster <- makeCluster(n.cores, type = "FORK")
 doParallel::registerDoParallel(cl = dcluster)
 # generate cs data sets with noise
-ds <- replicate(100, noisyDat(6, noisefraction = .08), simplify = FALSE)
+ds <- replicate(100, noisyDat(6, noisefraction = .2), simplify = FALSE)
 
 
 
@@ -130,6 +130,7 @@ nonempty_nst_dat <- nst_dat[nonempty_idx]
 
 pot_of_nonempty_targets <- nonsig_targets[nonempty_idx]
 
+# make sure to collect only incorrect models
 pot_minus_submodels <- foreach(i = seq_along(pot_overfit_nonempty)) %dopar% {
   pot_overfit_nonempty[[i]][
     sapply(pot_overfit_nonempty[[i]]$condition, 
@@ -144,7 +145,7 @@ pot_of_nonempty_targets <- pot_of_nonempty_targets[pot_minus_submodels_nonempty_
 
 pot_minus_submodels_nempty <- pot_minus_submodels[pot_minus_submodels_nonempty_idx]
 
-
+# sample one model
 pot_overfit_picks <- mclapply(pot_minus_submodels_nempty, 
                               function(x) x[sample(1:nrow(x), 1),])
 

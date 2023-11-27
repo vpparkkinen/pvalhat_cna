@@ -27,6 +27,7 @@ bs_dat_create <- function(Nsets = 1e3,
 # }
 
 permutate_cols <- function(dat, colnames = NA){
+  dat <- ct2df(dat)
   l <- nrow(dat)
   what_perm <- if(all(is.na(colnames))){names(dat)} else {colnames}
   for(i in what_perm){
@@ -36,7 +37,18 @@ permutate_cols <- function(dat, colnames = NA){
 }
 
 
+# full_perm_dist <- function(dat, outcome){
+#   dat <- ct2df(dat)
+#   oi <- which(names(dat) == outcome)
+#   dmo <- dat[,-oi]
+#   ouc <- dat[, oi]
+#   ol <- length(ouc)
+#   perms <- gtools::permutations(ol, ol, 1:ol)
+# }
+
+
 getoutcomes <- function(x){
+  x <- noblanks(x)
   asfs <- unlist(extract_asf(x))
   out <- unlist(lapply(asfs, rhs))
   return(out)
@@ -58,11 +70,12 @@ sim_null <- function(x,
   if(nulltype=="iid"){
   out <- bs_dat_create(Nsets = Nsets, 
                        size = N,
+                       #size = N*40,
                        varnames = facs,
                        varnum = length(x),
                        type = type)
   } else {
-    if(is.na(outcomes)){outcomes <- names(x)}
+    if(any(is.na(outcomes))){outcomes <- names(x)}
     out <- replicate(Nsets, permutate_cols(x, colnames = outcomes), simplify = FALSE)
   }
   return(out)
@@ -96,11 +109,16 @@ ccov_dist_single_model <- function(dat,
 pval_hat_single <- function(model, 
                             dat,
                             #stat_type = c("consistency", "coverage"),
-                            obs_con = NA,
-                            obs_cov = NA,
-                            nulltype = c("iid", "perm.outcome", "perm.all"),
+                            obs_con = attributes(condition(model, dat))$info[,"consistency"],
+                            obs_cov = attributes(condition(model, dat))$info[,"coverage"],
+                            nulltype = c("perm.outcome", "iid", "perm.all"),
                             bs_samples = 1e3){
-  simdist <- ccov_dist_single_model(dat, model = model, Nsets = bs_samples)
+  
+  nulltype <- match.arg(nulltype)
+  simdist <- ccov_dist_single_model(dat, 
+                                    model = model, 
+                                    Nsets = bs_samples,
+                                    nulltype = nulltype)
   concov <- c(obs_con, obs_cov)
   #stat <- match.arg(stat_type)
   out <- vector("numeric", 2)
@@ -110,10 +128,12 @@ pval_hat_single <- function(model,
       what_dist <- simdist[,which(names(simdist) == ccn[i])]
       n <- length(what_dist)
       r <- length(what_dist[what_dist >= concov[i]])
+      #r <- length(what_dist[what_dist > concov[i]]) 
       #pval <- (r + 1) / (n + 1) # think this over!
-      out[i] <- r / n  
+      out[i] <- r / n
+      #out[i] <- (r+1) / (n+1)
     }
-      
+
   }
   
   names(out) <- c("p-val_con", "p-val_cov")
@@ -122,6 +142,29 @@ pval_hat_single <- function(model,
   attr(out, "observed con and cov") <- concov
   return(out)
 }
+
+msc_pval_hat <- function(model, dat){
+  mc <- frscore:::decompose_model(model)
+  mscs <- lapply(mc$lhss, function(x) gsub("\\+", "", x))
+  mscs <- lapply(mscs, function(x) unlist(strsplit(x, "")))
+  for(i in seq_along(mscs)){
+    mscs[[i]] <- sapply(mscs[[i]], function(x) paste0(x, "->", mc$rhss[i]), 
+                        USE.NAMES = FALSE)
+  }
+  mscs <- unlist(mscs)
+  ccl <- lapply(mscs, function(x) 
+    attributes(condition(x, dat))$info[,c("consistency", "coverage")])
+  #names(ccl) <- mscs
+  ccl <- do.call(rbind, ccl)
+  out <- mapply(pval_hat_single, 
+                model = mscs, 
+                obs_con = ccl$consistency,
+                obs_cov = ccl$coverage,
+                MoreArgs = list(dat = dat, nulltype = "perm.outcome"),
+                SIMPLIFY = FALSE)
+  return(out)
+}
+
 
 #EXAMPLE
 
