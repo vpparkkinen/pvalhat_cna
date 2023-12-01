@@ -18,18 +18,18 @@ source("pval_hat_cna.R")
 
 
 
-n.cores <- 4
+n.cores <- 3
 dcluster <- makeCluster(n.cores, type = "FORK")
 registerDoParallel(cl = dcluster)
 
 
 N <- 500 # increase this to get a better estimate of the p-val distr.
-vn <- 6
+vn <- 5
 #ndat <- bs_dat_create(Nsets = 1, type = "cs")[[1]]
 #ndat <- bs_dat_create(Nsets = N, varnum = vn ,type = "cs")
 # WARNING: will take time to run
 #models <- replicate(N, randomCsf(ndat))
-models <- replicate(N, randomCsf(vn))
+models <- replicate(N, randomAsf(vn))
 outcomes <- lapply(models, getoutcomes)
 ndat <- lapply(models, function(x) ct2df(selectCases(x)))
 ndat <- lapply(ndat, function(x) rbind(x, x))
@@ -63,7 +63,7 @@ pvals <- foreach(i = 1:length(models)) %dopar% {
                   obs_con = fits[[i]]$consistency,
                   obs_cov = fits[[i]]$coverage,
                   nulltype = "perm.outcome",
-                  bs_samples = 500)
+                  bs_samples = 1000)
 }
 
 
@@ -83,6 +83,8 @@ parallel::stopCluster(dcluster)
 
 pvals_con <- unlist(lapply(pvals, '[', 1))
 pvals_cov <- unlist(lapply(pvals, '[', 2))
+any(is.na(pvals_con))
+
 
 pv_con_no <- na.omit(pvals_con)
 pv_cov_no <- na.omit(pvals_cov)
@@ -104,9 +106,9 @@ chisq.test(pv_cov_no, p = rep(1/length(pv_cov_no), length(pv_cov_no)))
 # length(which(pvals_con >= 0.99))
 # length(which(pvals_cov <= 0.05))
 
-hist(pvals_con, breaks = 100, xaxt = 'n')
+hist(pvals_con, breaks = 500, xaxt = 'n')
 axis(side = 1, at=seq(0,1,0.05))
-hist(pvals_cov, breaks = 1000, xaxt = 'n')
+hist(pvals_cov, breaks = 500, xaxt = 'n')
 axis(side = 1, at=seq(0,1,0.05))
 
 

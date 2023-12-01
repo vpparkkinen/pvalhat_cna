@@ -57,8 +57,8 @@ nst_dat <- ds[wreu]
 
 pot_subs <- foreach(i = seq_along(nonsig_targets)) %dopar% {
   cna(nst_dat[[i]], 
-      con = (nst_fits[[i]]$consistency * 0.7),
-      cov = (nst_fits[[i]]$coverage * 0.7),
+      con = (nst_fits[[i]]$consistency * 0.9),
+      cov = (nst_fits[[i]]$coverage * 0.9),
       outcome = nst_outs[[i]])
 }
 

@@ -87,7 +87,7 @@ sim_null <- function(x,
 
 ccov_dist_single_model <- function(dat, 
                                    model,
-                                   nulltype = c("iid", "perm.outcome", "perm.all"),
+                                   nulltype = c("perm.outcome", "iid", "perm.all"),
                                    Nsets = 1e3){
   dats <- sim_null(x = dat, 
                    model = model, 
@@ -130,8 +130,8 @@ pval_hat_single <- function(model,
       r <- length(what_dist[what_dist >= concov[i]])
       #r <- length(what_dist[what_dist > concov[i]]) 
       #pval <- (r + 1) / (n + 1) # think this over!
-      out[i] <- r / n
-      #out[i] <- (r+1) / (n+1)
+      #out[i] <- r / n
+      out[i] <- (r+1) / (n+1)
     }
 
   }
